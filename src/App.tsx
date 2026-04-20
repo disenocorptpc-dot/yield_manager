@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
+import LoginPanel from './components/LoginPanel';
 
 export interface Prerequisite {
   id: string;
@@ -35,6 +36,29 @@ export interface Phase {
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // Check local storage for existing session on load
+  useEffect(() => {
+    const session = localStorage.getItem('yield_auth');
+    if (session === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('yield_auth', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('yield_auth');
+  };
+
+  if (!isAuthenticated) {
+    return <LoginPanel onLogin={handleLogin} />;
+  }
 
   return (
     <div className="h-screen w-screen flex flex-col font-sans relative">
@@ -55,6 +79,12 @@ function App() {
         <div className="flex items-center gap-4">
           <button className="px-5 py-2.5 glass-panel hover:bg-slate-800 text-slate-300 hover:text-white font-medium rounded-lg transition-all duration-300 text-sm flex items-center gap-2">
             📊 Reportes
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="px-4 py-2.5 bg-slate-800/50 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700/50 hover:border-red-500/50 rounded-lg transition-all duration-300 text-sm font-medium"
+          >
+            Salir
           </button>
         </div>
       </header>
