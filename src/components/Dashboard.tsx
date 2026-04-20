@@ -111,7 +111,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
         {/* Proyecto Principal (Destacado) */}
         {mainProject ? (
           <div className="p-5 border-b border-white/10 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br opacity-20 pointer-events-none transition-opacity group-hover:opacity-30" className={`absolute inset-0 bg-gradient-to-br ${mainProject.color} opacity-20`}></div>
+            <div className={`absolute inset-0 bg-gradient-to-br ${mainProject.color} opacity-20 pointer-events-none transition-opacity group-hover:opacity-30`}></div>
             <div className="relative z-10">
               <div className="flex justify-between items-start mb-3">
                 <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-500/30 flex items-center gap-1">
