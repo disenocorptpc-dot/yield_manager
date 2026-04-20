@@ -46,6 +46,43 @@ function App() {
     }
   }, []);
 
+  // Fetch projects from central Cloudflare D1 Database on mount
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error("No se pudo cargar de la DB:", error);
+      }
+    };
+    
+    fetchProjects();
+  }, [isAuthenticated]);
+
+  // Hook into setProjects to automatically update the DB
+  const handleUpdateProjects = async (newProjects: Project[] | ((prev: Project[]) => Project[])) => {
+    // Resolve callback if needed
+    const resolvedProjects = typeof newProjects === 'function' ? newProjects(projects) : newProjects;
+    setProjects(resolvedProjects);
+
+    // Sync to backend DB
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projects: resolvedProjects })
+      });
+    } catch (error) {
+      console.error("Error guardando en la BD:", error);
+    }
+  };
+
   const handleLogin = () => {
     setIsAuthenticated(true);
     localStorage.setItem('yield_auth', 'true');
@@ -89,7 +126,7 @@ function App() {
         </div>
       </header>
       <main className="flex-1 p-6 overflow-hidden flex flex-col z-10 relative">
-        <Dashboard projects={projects} setProjects={setProjects} />
+        <Dashboard projects={projects} setProjects={handleUpdateProjects} />
       </main>
     </div>
   );
