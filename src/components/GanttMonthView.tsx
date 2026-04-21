@@ -131,7 +131,7 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
                       <div 
                         key={`${event.id}-${weekIdx}`} 
                         onClick={() => onProjectClick(event.projectId)}
-                        className={`pointer-events-auto text-xs font-semibold px-2.5 py-1.5 truncate shadow-lg event-bar cursor-pointer bg-gradient-to-r ${event.projectColor} ${event.isMain ? 'ring-1 ring-white/50 shadow-white/10' : 'opacity-90 hover:opacity-100'} text-white/95 flex items-center gap-2`}
+                        className={`pointer-events-auto text-xs font-semibold truncate shadow-lg event-bar cursor-pointer border border-white/5 backdrop-blur-md flex items-center gap-2 ${event.isMain ? 'ring-1 ring-white/50 shadow-white/10' : 'hover:border-white/20'} text-slate-200`}
                         style={{ 
                           width: `calc(${width}% - 12px)`, 
                           left: `calc(${left}% + 6px)`, 
@@ -140,15 +140,37 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
                           borderBottomLeftRadius: isContinuousLeft ? '0' : '8px',
                           borderTopRightRadius: isContinuousRight ? '0' : '8px',
                           borderBottomRightRadius: isContinuousRight ? '0' : '8px',
+                          backgroundColor: 'rgba(15, 23, 42, 0.7)' // Fondo slate-900 translúcido
                         }}
                         title={`${event.projectName}: ${event.process}`}
                       >
-                        {event.projectImageUrl && !isContinuousLeft && (
-                           <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 border border-white/30 shadow-sm bg-black/20">
-                             <img src={event.projectImageUrl} className="w-full h-full object-cover" alt="" />
-                           </div>
+                        {/* Tinte de color sutil de fondo */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${event.projectColor} opacity-20 pointer-events-none`}></div>
+                        
+                        {/* Marca de agua fotográfica texturizada */}
+                        {event.projectImageUrl && (
+                          <div 
+                            className="absolute inset-0 opacity-[0.08] mix-blend-screen pointer-events-none" 
+                            style={{ 
+                              backgroundImage: `url(${event.projectImageUrl})`, 
+                              backgroundSize: '30px 30px', 
+                              backgroundRepeat: 'repeat',
+                              backgroundPosition: 'center'
+                            }}
+                          />
                         )}
-                        <span className="truncate">{event.projectName} <span className="opacity-70 font-normal ml-1">— {event.process}</span></span>
+
+                        {/* Borde brillante izquierdo para denotar color rápidamente */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${event.projectColor} ${isContinuousLeft ? 'opacity-30' : 'opacity-100'}`}></div>
+
+                        <div className="relative z-10 flex items-center gap-2 w-full px-2.5 py-1.5 truncate">
+                          {event.projectImageUrl && (
+                             <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 border border-white/20 shadow-sm bg-black/40">
+                               <img src={event.projectImageUrl} className="w-full h-full object-cover" alt="" />
+                             </div>
+                          )}
+                          <span className="truncate drop-shadow-md text-white">{event.projectName} <span className="text-white/60 font-normal ml-1">— {event.process}</span></span>
+                        </div>
                       </div>
                     );
                   }

@@ -109,7 +109,50 @@ export default function ProjectModal({ existingProjects, initialData, onClose, o
   };
 
   const updatePhase = (id: string, field: keyof Phase, value: string) => {
-    setPhases(phases.map(p => p.id === id ? { ...p, [field]: value } : p));
+    setPhases(currentPhases => {
+      const phaseIndex = currentPhases.findIndex(p => p.id === id);
+      if (phaseIndex === -1) return currentPhases;
+
+      const updatedPhases = [...currentPhases];
+      const oldPhase = updatedPhases[phaseIndex];
+      updatedPhases[phaseIndex] = { ...oldPhase, [field]: value };
+
+      // Lógica de Yield: Cascada de Fechas
+      if (field === 'startDate' || field === 'endDate') {
+        // Parsear fechas a mediodía para evitar problemas de zona horaria
+        const oldDate = new Date(oldPhase[field] + 'T12:00:00Z');
+        const newDate = new Date(value + 'T12:00:00Z');
+        const diffTime = newDate.getTime() - oldDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays !== 0) {
+          // Si cambiamos el inicio de una fase, conservamos su duración desplazando también su final
+          if (field === 'startDate') {
+             const ownEnd = new Date(updatedPhases[phaseIndex].endDate + 'T12:00:00Z');
+             ownEnd.setDate(ownEnd.getDate() + diffDays);
+             updatedPhases[phaseIndex].endDate = ownEnd.toISOString().split('T')[0];
+          }
+
+          // Empujamos todas las fases subsecuentes (efecto dominó)
+          for (let j = phaseIndex + 1; j < updatedPhases.length; j++) {
+            const nextPhase = updatedPhases[j];
+            const nextStart = new Date(nextPhase.startDate + 'T12:00:00Z');
+            nextStart.setDate(nextStart.getDate() + diffDays);
+            
+            const nextEnd = new Date(nextPhase.endDate + 'T12:00:00Z');
+            nextEnd.setDate(nextEnd.getDate() + diffDays);
+            
+            updatedPhases[j] = {
+              ...nextPhase,
+              startDate: nextStart.toISOString().split('T')[0],
+              endDate: nextEnd.toISOString().split('T')[0]
+            };
+          }
+        }
+      }
+
+      return updatedPhases;
+    });
   };
 
   const removePhase = (id: string) => {

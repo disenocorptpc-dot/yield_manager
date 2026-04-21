@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import GanttMonthView from './GanttMonthView';
+import ResourceTimelineView from './ResourceTimelineView';
 import ProjectModal from './ProjectModal';
 import ProjectDetailsModal from './ProjectDetailsModal';
 import { PackagePlus, Star, ImageIcon, Plus, Box, AlertCircle, CheckCircle } from 'lucide-react';
@@ -173,9 +174,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
           {activeTab === 'calendar' ? (
             <GanttMonthView projects={projects} onProjectClick={setSelectedProjectId} />
           ) : (
-             <div className="flex items-center justify-center h-full text-slate-500">
-              <p>Vista de recursos en construcción...</p>
-            </div>
+            <ResourceTimelineView projects={projects} onProjectClick={setSelectedProjectId} />
           )}
         </div>
       </div>
