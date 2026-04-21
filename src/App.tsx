@@ -73,13 +73,20 @@ function App() {
 
     // Sync to backend DB
     try {
-      await fetch('/api/projects', {
+      const dbRes = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projects: resolvedProjects })
       });
+      
+      const dbData = await dbRes.json();
+      if (!dbData.success) {
+        alert("Fallo Cloudflare D1: " + (dbData.error || "Error desconocido"));
+        console.error("DB Error:", dbData.error);
+      }
     } catch (error) {
-      console.error("Error guardando en la BD:", error);
+      console.error("Error de Red / Fetch:", error);
+      alert("Error de Red al guardar en DB.");
     }
   };
 
