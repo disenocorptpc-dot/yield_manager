@@ -13,26 +13,27 @@ interface GanttProps {
 
 export default function GanttMonthView({ projects, onProjectClick }: GanttProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // Starts in April 2026
+  const [viewMode, setViewMode] = useState<1 | 3 | 4>(1); 
 
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const prevPeriod = () => setCurrentDate(subMonths(currentDate, viewMode));
+  const nextPeriod = () => setCurrentDate(addMonths(currentDate, viewMode));
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(monthStart);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const periodStart = startOfMonth(currentDate);
+  const periodEnd = endOfMonth(addMonths(periodStart, viewMode - 1));
+  const daysInPeriod = eachDayOfInterval({ start: periodStart, end: periodEnd });
 
   // Add padding days for the first and last weeks to align with Mon-Sun grid
-  const startingDayIndex = (getDay(monthStart) + 6) % 7; 
+  const startingDayIndex = (getDay(periodStart) + 6) % 7; 
   const paddingDays = Array.from({ length: startingDayIndex }).map((_, i) => {
-    return new Date(monthStart.getFullYear(), monthStart.getMonth(), -startingDayIndex + i + 1);
+    return new Date(periodStart.getFullYear(), periodStart.getMonth(), -startingDayIndex + i + 1);
   });
   
-  const endingDayIndex = (getDay(monthEnd) + 6) % 7;
+  const endingDayIndex = (getDay(periodEnd) + 6) % 7;
   const trailingDays = Array.from({ length: 6 - endingDayIndex }).map((_, i) => {
-    return new Date(monthEnd.getFullYear(), monthEnd.getMonth() + 1, i + 1);
+    return new Date(periodEnd.getFullYear(), periodEnd.getMonth() + 1, i + 1);
   });
 
-  const allDays = [...paddingDays, ...daysInMonth, ...trailingDays];
+  const allDays = [...paddingDays, ...daysInPeriod, ...trailingDays];
   const weeks = [];
   for (let i = 0; i < allDays.length; i += 7) {
     weeks.push(allDays.slice(i, i + 7));
@@ -52,21 +53,36 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
 
   return (
     <div className="h-full print:h-auto flex print:block flex-col rounded-xl overflow-hidden print:overflow-visible glass-panel border-white/5">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between px-5 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-md gap-4">
         <h2 className="text-2xl font-light text-white capitalize flex items-center gap-3">
-          <span className="font-bold tracking-tight">{format(currentDate, 'MMMM', { locale: es })}</span>
+          <span className="font-bold tracking-tight">
+            {viewMode === 1 
+              ? format(periodStart, 'MMMM', { locale: es })
+              : `${format(periodStart, 'MMM', { locale: es })} - ${format(periodEnd, 'MMM', { locale: es })}`}
+          </span>
           <span className="text-slate-500 font-mono text-xl">{format(currentDate, 'yyyy')}</span>
         </h2>
-        <div className="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/5">
-          <button onClick={prevMonth} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button onClick={() => setCurrentDate(new Date(2026, 3, 1))} className="px-4 py-1.5 font-medium text-sm rounded-md hover:bg-white/10 text-slate-300 hover:text-white transition-colors bg-white/5">
-            Abr '26
-          </button>
-          <button onClick={nextMonth} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-            <ChevronRight className="w-5 h-5" />
-          </button>
+        
+        <div className="flex items-center gap-4">
+           {/* Vista Selector */}
+           <div className="hidden sm:flex bg-black/40 p-1 rounded-lg border border-white/5">
+             <button onClick={() => setViewMode(1)} className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${viewMode === 1 ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Mes</button>
+             <button onClick={() => setViewMode(3)} className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${viewMode === 3 ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Trimestre</button>
+             <button onClick={() => setViewMode(4)} className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${viewMode === 4 ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Cuatrimestre</button>
+           </div>
+           
+           {/* Navegación de tiempo */}
+           <div className="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/5">
+             <button onClick={prevPeriod} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+               <ChevronLeft className="w-5 h-5" />
+             </button>
+             <button onClick={() => setCurrentDate(new Date(2026, 3, 1))} className="px-4 py-1.5 font-medium text-sm rounded-md hover:bg-white/10 text-slate-300 hover:text-white transition-colors bg-white/5">
+               Hoy
+             </button>
+             <button onClick={nextPeriod} className="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+               <ChevronRight className="w-5 h-5" />
+             </button>
+           </div>
         </div>
       </div>
 
@@ -85,11 +101,12 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
           {weeks.map((week, weekIdx) => (
             <div key={weekIdx} className="flex-1 grid grid-cols-7 min-h-[140px] print:min-h-[90px] relative group/week">
               {week.map((day, dayIdx) => {
-                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isInsidePeriod = day >= periodStart && day <= periodEnd;
+                const isFirstDayOfMonth = day.getDate() === 1;
                 return (
-                  <div key={dayIdx} className={`border-b border-r border-white/5 p-2 transition-colors ${isCurrentMonth ? 'bg-transparent hover:bg-white/[0.02]' : 'bg-black/20'}`}>
-                    <span className={`text-sm font-semibold p-1 inline-flex items-center justify-center ${isCurrentMonth ? 'text-slate-400' : 'text-slate-700'}`}>
-                      {format(day, 'd')}
+                  <div key={dayIdx} className={`border-b border-r border-white/5 p-2 transition-colors ${isInsidePeriod ? 'bg-transparent hover:bg-white/[0.02]' : 'bg-black/40'} ${isFirstDayOfMonth ? 'border-t border-t-orange-500/20 bg-orange-500/5' : ''}`}>
+                    <span className={`text-sm font-semibold p-1 inline-flex items-center justify-center ${isInsidePeriod ? (isFirstDayOfMonth ? 'text-orange-400 font-bold capitalize' : 'text-slate-400') : 'text-slate-700'}`}>
+                      {isFirstDayOfMonth ? format(day, "d MMM", { locale: es }) : format(day, 'd')}
                     </span>
                   </div>
                 );
