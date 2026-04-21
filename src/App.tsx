@@ -105,7 +105,7 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col font-sans relative">
+    <div className="h-screen print:h-auto w-screen flex print:block flex-col font-sans relative">
       {/* Ambient background glow */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-orange-500/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none"></div>
@@ -132,7 +132,7 @@ function App() {
           </button>
         </div>
       </header>
-      <main className="flex-1 p-6 overflow-hidden flex flex-col z-10 relative">
+      <main className="flex-1 print:block p-6 overflow-hidden print:overflow-visible flex flex-col z-10 relative">
         <Dashboard projects={projects} setProjects={handleUpdateProjects} />
       </main>
     </div>

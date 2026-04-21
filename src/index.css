@@ -55,3 +55,59 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2); 
 }
+
+/* ====== PRINT MODE FOR PHYSICAL PAPER ====== */
+@media print {
+  @page {
+    size: landscape;
+    margin: 1cm;
+  }
+
+  body {
+    background-color: white !important;
+    color: black !important;
+    overflow: visible !important;
+  }
+
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Force printers to capture background gradients/colors for Gantt bars */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove Dark Mode Aesthetics & Glass */
+  .glass-panel, .glass-header, .bg-slate-900, .bg-slate-950, .bg-slate-800, 
+  .bg-black\/20, .bg-black\/30, .bg-black\/40, .bg-slate-900\/50, .bg-slate-900\/80, .bg-slate-950\/30, .bg-slate-950\/40, .bg-slate-950\/50, .bg-slate-900\/60 {
+    background-color: transparent !important;
+    background-image: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border-color: #cbd5e1 !important; /* slate-300 */
+  }
+
+  /* Text color normalization (white to dark grey/black) */
+  .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+    color: #0f172a !important; 
+  }
+  
+  .text-slate-500 {
+    color: #475569 !important;
+  }
+
+  /* Borders normalization */
+  .border-white\/5, .border-white\/10 {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Explode all scroll containers so they print full length */
+  .overflow-y-auto, .h-full, .max-h-\[90vh\] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}

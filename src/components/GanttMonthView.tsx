@@ -45,12 +45,13 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
       projectId: proj.id,
       projectName: proj.name,
       projectColor: proj.color,
+      projectImageUrl: proj.imageUrl,
       isMain: proj.isMain
     }))
   );
 
   return (
-    <div className="h-full flex flex-col rounded-xl overflow-hidden glass-panel border-white/5">
+    <div className="h-full print:h-auto flex print:block flex-col rounded-xl overflow-hidden print:overflow-visible glass-panel border-white/5">
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-slate-900/60 backdrop-blur-md">
         <h2 className="text-2xl font-light text-white capitalize flex items-center gap-3">
           <span className="font-bold tracking-tight">{format(currentDate, 'MMMM', { locale: es })}</span>
@@ -69,7 +70,7 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex print:block flex-col overflow-hidden print:overflow-visible">
         {/* Header Days */}
         <div className="grid grid-cols-7 border-b border-white/5 bg-slate-900/80">
           {WEEKDAYS.map(day => (
@@ -80,9 +81,9 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-y-auto bg-slate-950/40 flex flex-col custom-scrollbar">
+        <div className="flex-1 print:block overflow-y-auto bg-slate-950/40 flex flex-col custom-scrollbar">
           {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className="flex-1 grid grid-cols-7 min-h-[140px] relative group/week">
+            <div key={weekIdx} className="flex-1 grid grid-cols-7 min-h-[140px] print:min-h-[90px] relative group/week">
               {week.map((day, dayIdx) => {
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 return (
@@ -142,6 +143,11 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
                         }}
                         title={`${event.projectName}: ${event.process}`}
                       >
+                        {event.projectImageUrl && !isContinuousLeft && (
+                           <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 border border-white/30 shadow-sm bg-black/20">
+                             <img src={event.projectImageUrl} className="w-full h-full object-cover" alt="" />
+                           </div>
+                        )}
                         <span className="truncate">{event.projectName} <span className="opacity-70 font-normal ml-1">— {event.process}</span></span>
                       </div>
                     );

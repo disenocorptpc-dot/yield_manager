@@ -46,7 +46,10 @@ export default function ProjectModal({ existingProjects, initialData, onClose, o
 
   const [name, setName] = useState(initialData?.name || '');
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
-  const [color, setColor] = useState(initialData?.color || selectableColors[0]);
+  const [color, setColor] = useState(() => {
+    if (initialData?.color) return initialData.color;
+    return selectableColors[Math.floor(Math.random() * selectableColors.length)];
+  });
   const [projectType, setProjectType] = useState<'Principal' | 'Comodín'>(initialData?.projectType || 'Principal');
   const [status, setStatus] = useState<'En tiempo' | 'Desfasado' | 'En pausa'>(initialData?.status || 'En tiempo');
   

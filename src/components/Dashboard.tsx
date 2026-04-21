@@ -38,9 +38,9 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
   ).sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   return (
-    <div className="flex h-full gap-6">
+    <div className="flex print:block h-full print:h-auto gap-6 print:space-y-6">
       {/* Sidebar para Proyectos */}
-      <div className="w-80 glass-panel rounded-2xl flex flex-col overflow-hidden shadow-2xl flex-shrink-0">
+      <div className="w-80 print:w-full print:block glass-panel rounded-2xl flex flex-col overflow-hidden print:overflow-visible shadow-2xl flex-shrink-0">
         
         {/* Proyecto Principal (Destacado) */}
         {mainProject ? (
@@ -83,7 +83,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
           </div>
         )}
 
-        {/* Lista de otros proyectos */}
+        {/* Lista de otros proyectos (Ocultar en impresión si se prefiere, o dejar fluir) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Activos en Taller</h3>
@@ -122,7 +122,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
                     const newProjects = projects.map(p => ({ ...p, isMain: p.id === proj.id }));
                     setProjects(newProjects);
                   }}
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-slate-500 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
+                  className="print:hidden w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-slate-500 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
                   title="Marcar como principal"
                 >
                   <Star className="w-3 h-3" />
@@ -133,7 +133,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
         </div>
         
         {/* Acciones base */}
-        <div className="p-4 border-t border-white/5 bg-black/20">
+        <div className="print:hidden p-4 border-t border-white/5 bg-black/20">
           <button onClick={() => { setEditProjectData(undefined); setIsModalOpen(true); }} className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
             <Plus className="w-4 h-4" /> Nuevo Proyecto
           </button>
@@ -141,9 +141,9 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
       </div>
 
       {/* Main Content Area (Calendario) */}
-      <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+      <div className="flex-1 print:block glass-panel rounded-2xl flex flex-col overflow-hidden print:overflow-visible shadow-2xl print:break-before-page print:break-inside-avoid">
         <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/20">
-          <div className="flex bg-slate-900/50 border border-white/5 p-1 rounded-lg backdrop-blur-md">
+          <div className="print:hidden flex bg-slate-900/50 border border-white/5 p-1 rounded-lg backdrop-blur-md">
             <button 
               onClick={() => setActiveTab('calendar')}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'calendar' ? 'bg-white/10 shadow-sm text-white' : 'text-slate-400 hover:text-slate-200'}`}
@@ -181,7 +181,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
       </div>
 
       {/* RIGHT SIDEBAR: LOGISTICS & ALERTS */}
-      <div className="w-80 bg-slate-900 border-l border-white/5 flex flex-col z-10 shrink-0">
+      <div className="w-80 print:w-full print:block bg-slate-900 border-l border-white/5 flex flex-col z-10 shrink-0 print:border-none print:mt-8">
         <div className="p-5 border-b border-white/5 bg-slate-950/50">
           <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
             <AlertCircle className="w-4 h-4 text-orange-400" /> Logística Crítica
@@ -189,7 +189,7 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
           <p className="text-[10px] text-slate-500 mt-1">Suministros y requisitos pendientes</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar print:grid print:grid-cols-2 print:gap-4 print:space-y-0">
           {pendingLogistics.length === 0 ? (
             <div className="text-center p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
               <CheckCircle className="w-8 h-8 text-emerald-500/50 mx-auto mb-2" />
