@@ -65,6 +65,33 @@ export default function ProjectDetailsModal({ project, onClose, onUpdateProject,
   
   const currentProgress = calculateProgress();
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  let statusLegend = '';
+  const currentPhase = project.phases.find(p => p.startDate <= todayStr && p.endDate >= todayStr && p.status !== 'Terminada');
+  
+  if (currentPhase) {
+    statusLegend = `En proceso: ${currentPhase.process}`;
+  } else {
+    const upcomingPhases = project.phases.filter(p => p.startDate > todayStr && p.status !== 'Terminada').sort((a,b) => a.startDate.localeCompare(b.startDate));
+    if (upcomingPhases.length > 0) {
+      const next = upcomingPhases[0];
+      const diffTime = new Date(next.startDate + 'T12:00:00Z').getTime() - new Date(todayStr + 'T12:00:00Z').getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+         statusLegend = `Mañana inicia: ${next.process}`;
+      } else {
+         statusLegend = `Inicia en ${diffDays} días: ${next.process}`;
+      }
+    } else {
+       const hasPending = project.phases.some(p => p.status !== 'Terminada');
+       if (hasPending) {
+         statusLegend = `Fases atrasadas pendientes`;
+       } else {
+         statusLegend = `Todas las fases completadas`;
+       }
+    }
+  }
+
   const togglePhaseStatus = (phaseId: string) => {
      const updatedPhases = project.phases.map(p => {
        if (p.id === phaseId) {
@@ -116,6 +143,8 @@ export default function ProjectDetailsModal({ project, onClose, onUpdateProject,
               <p className="text-sm font-medium text-slate-300 drop-shadow flex items-center gap-2">
                 <span className={`w-3 h-3 rounded-full bg-gradient-to-br ${project.color} border border-white/30`}></span>
                 {project.phases.length} {project.phases.length === 1 ? 'fase programada' : 'fases programadas'}
+                <span className="text-slate-500 mx-2">•</span>
+                <span className="text-orange-400 font-bold bg-black/40 px-2 py-0.5 rounded-md border border-white/5">{statusLegend}</span>
               </p>
             </div>
           </div>

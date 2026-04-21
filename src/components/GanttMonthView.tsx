@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, getDay, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, getDay, parseISO, startOfDay, endOfDay, isToday, isSunday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Project } from '../App';
@@ -103,10 +103,23 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
               {week.map((day, dayIdx) => {
                 const isInsidePeriod = day >= periodStart && day <= periodEnd;
                 const isFirstDayOfMonth = day.getDate() === 1;
+                const today = isToday(day);
+                const sunday = isSunday(day);
+                const altMonth = day.getMonth() % 2 === 0;
+
+                let bgClass = 'bg-black/60'; 
+                if (isInsidePeriod) {
+                  if (sunday) bgClass = 'bg-slate-950/80 opacity-80'; 
+                  else if (altMonth) bgClass = 'bg-transparent';
+                  else bgClass = 'bg-white/[0.02]'; 
+                }
+
+                const todayBorder = today ? 'ring-2 ring-orange-500 ring-inset z-20 shadow-[inset_0_0_20px_rgba(249,115,22,0.15)] bg-orange-500/5' : '';
+
                 return (
-                  <div key={dayIdx} className={`border-b border-r border-white/5 p-2 transition-colors ${isInsidePeriod ? 'bg-transparent hover:bg-white/[0.02]' : 'bg-black/40'} ${isFirstDayOfMonth ? 'border-t border-t-orange-500/20 bg-orange-500/5' : ''}`}>
-                    <span className={`text-sm font-semibold p-1 inline-flex items-center justify-center ${isInsidePeriod ? (isFirstDayOfMonth ? 'text-orange-400 font-bold capitalize' : 'text-slate-400') : 'text-slate-700'}`}>
-                      {isFirstDayOfMonth ? format(day, "d MMM", { locale: es }) : format(day, 'd')}
+                  <div key={dayIdx} className={`border-b border-r border-white/5 p-2 transition-colors relative ${bgClass} ${todayBorder} ${isFirstDayOfMonth ? 'border-t border-t-orange-500/20' : ''}`}>
+                    <span className={`text-sm font-semibold px-1.5 py-0.5 inline-flex items-center justify-center rounded-md ${today ? 'bg-orange-500 text-white shadow-lg' : isInsidePeriod ? (isFirstDayOfMonth ? 'text-orange-400 font-bold capitalize' : (sunday ? 'text-slate-600' : 'text-slate-400')) : 'text-slate-700'}`}>
+                      {isFirstDayOfMonth && !today ? format(day, "d MMM", { locale: es }) : format(day, 'd')}
                     </span>
                   </div>
                 );
