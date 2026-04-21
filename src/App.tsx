@@ -73,18 +73,10 @@ function App() {
 
     // Sync to backend DB
     try {
-      const payloadString = JSON.stringify({ projects: resolvedProjects });
-      
-      // Safety check to prevent hitting Cloudflare D1 hard limits (1MB)
-      if (payloadString.length > 950000) {
-        alert("⚠️ Error: Tienes demasiados datos acumulados o imágenes antiguas sin comprimir. El tamaño total supera el límite de 1MB de Cloudflare. Por favor, refresca la página (F5) para limpiar la memoria caché.");
-        return;
-      }
-
       const dbRes = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: payloadString
+        body: JSON.stringify({ projects: resolvedProjects })
       });
       
       const dbData = await dbRes.json();
