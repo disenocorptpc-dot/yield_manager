@@ -104,8 +104,8 @@ body {
     border-color: #cbd5e1 !important;
   }
 
-  /* Explode all scroll containers so they print full length */
-  .overflow-y-auto, .h-full, .max-h-\[90vh\] {
+  /* Explode all scroll containers so they print full length, excluding images */
+  .overflow-y-auto:not(img), .h-full:not(img), .max-h-\[90vh\]:not(img) {
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
