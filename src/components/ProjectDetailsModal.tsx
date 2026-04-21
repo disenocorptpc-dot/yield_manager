@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Project } from '../App';
 import { X, Calendar, Edit, Paperclip, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -13,6 +13,49 @@ interface ProjectDetailsModalProps {
 }
 
 export default function ProjectDetailsModal({ project, onClose, onUpdateProject, onDeleteProject, onEdit }: ProjectDetailsModalProps) {
+  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+
+  const handlePhaseUpdate = (id: string, field: 'startDate' | 'endDate' | 'notes', value: string) => {
+    const phaseIndex = project.phases.findIndex(p => p.id === id);
+    if (phaseIndex === -1) return;
+
+    const updatedPhases = [...project.phases];
+    const oldPhase = updatedPhases[phaseIndex];
+    updatedPhases[phaseIndex] = { ...oldPhase, [field]: value };
+
+    // Lógica de Yield: Cascada de Fechas (reutilizada)
+    if (field === 'startDate' || field === 'endDate') {
+      const oldDate = new Date(oldPhase[field] + 'T12:00:00Z');
+      const newDate = new Date(value + 'T12:00:00Z');
+      const diffTime = newDate.getTime() - oldDate.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays !== 0) {
+        if (field === 'startDate') {
+           const ownEnd = new Date(updatedPhases[phaseIndex].endDate + 'T12:00:00Z');
+           ownEnd.setDate(ownEnd.getDate() + diffDays);
+           updatedPhases[phaseIndex].endDate = ownEnd.toISOString().split('T')[0];
+        }
+
+        for (let j = phaseIndex + 1; j < updatedPhases.length; j++) {
+          const nextPhase = updatedPhases[j];
+          const nextStart = new Date(nextPhase.startDate + 'T12:00:00Z');
+          nextStart.setDate(nextStart.getDate() + diffDays);
+          
+          const nextEnd = new Date(nextPhase.endDate + 'T12:00:00Z');
+          nextEnd.setDate(nextEnd.getDate() + diffDays);
+          
+          updatedPhases[j] = {
+            ...nextPhase,
+            startDate: nextStart.toISOString().split('T')[0],
+            endDate: nextEnd.toISOString().split('T')[0]
+          };
+        }
+      }
+    }
+    
+    onUpdateProject({ ...project, phases: updatedPhases });
+  };
   const calculateProgress = () => {
     const total = project.phases.length + (project.prerequisites?.length || 0);
     if (total === 0) return 0;
@@ -114,23 +157,56 @@ export default function ProjectDetailsModal({ project, onClose, onUpdateProject,
                        {isDone ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${project.color}`}></div>}
                     </button>
                     
-                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 ml-4 hover:bg-white/10 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                           <h4 className={`font-bold text-lg ${isDone ? 'text-slate-400 line-through' : 'text-slate-100'}`}>{phase.process}</h4>
+                    {editingPhaseId === phase.id ? (
+                      <div className="bg-slate-950 border border-orange-500/50 rounded-xl p-4 ml-4 shadow-lg shadow-orange-500/10">
+                        <div className="flex justify-between items-center mb-3">
+                           <h4 className="font-bold text-lg text-orange-400">{phase.process} <span className="text-xs text-slate-500 ml-2 font-normal">(Editando)</span></h4>
                         </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-black/40 text-slate-400 flex items-center gap-1.5 border border-white/5">
-                          <Calendar className="w-3 h-3" />
-                          {startDate} - {endDate}
-                        </span>
+                        <div className="flex gap-3 mb-3">
+                           <div className="flex-1">
+                             <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Inicio</label>
+                             <input type="date" value={phase.startDate} onChange={e => handlePhaseUpdate(phase.id, 'startDate', e.target.value)} className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 outline-none" />
+                           </div>
+                           <div className="flex-1">
+                             <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Fin</label>
+                             <input type="date" value={phase.endDate} onChange={e => handlePhaseUpdate(phase.id, 'endDate', e.target.value)} className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 outline-none" />
+                           </div>
+                        </div>
+                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Observaciones</label>
+                        <textarea 
+                           value={phase.notes} 
+                           onChange={e => handlePhaseUpdate(phase.id, 'notes', e.target.value)}
+                           placeholder="Observaciones, detalles o requerimientos..."
+                           className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-sm text-white mb-3 min-h-[60px] focus:border-orange-500 outline-none resize-y"
+                        />
+                        <div className="flex justify-end">
+                           <button onClick={() => setEditingPhaseId(null)} className="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold text-white transition-colors flex items-center gap-2">
+                             <CheckCircle className="w-4 h-4" /> Listo
+                           </button>
+                        </div>
                       </div>
-                      {(!isDone || phase.notes) && (
-                         <p className="text-sm text-slate-400 mt-2 p-3 bg-black/20 rounded-lg border border-white/5 leading-relaxed">
-                           <span className="font-semibold text-slate-500 uppercase text-[10px] block mb-1">Observaciones / Variantes</span>
-                           {phase.notes ? phase.notes : <span className="italic opacity-50">Sin observaciones especiales.</span>}
-                         </p>
-                      )}
-                    </div>
+                    ) : (
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-4 ml-4 hover:bg-white/10 transition-colors group relative">
+                        <button onClick={() => setEditingPhaseId(phase.id)} className="absolute top-3 right-3 p-1.5 bg-black/40 hover:bg-orange-500 rounded-md text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-all shadow-lg" title="Editar fase">
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="flex justify-between items-start mb-2 pr-8">
+                          <div className="flex items-center gap-3">
+                             <h4 className={`font-bold text-lg ${isDone ? 'text-slate-400 line-through' : 'text-slate-100'}`}>{phase.process}</h4>
+                          </div>
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-black/40 text-slate-400 flex items-center gap-1.5 border border-white/5">
+                            <Calendar className="w-3 h-3" />
+                            {startDate} - {endDate}
+                          </span>
+                        </div>
+                        {(!isDone || phase.notes) && (
+                           <p className="text-sm text-slate-400 mt-2 p-3 bg-black/20 rounded-lg border border-white/5 leading-relaxed">
+                             <span className="font-semibold text-slate-500 uppercase text-[10px] block mb-1">Observaciones / Variantes</span>
+                             {phase.notes ? phase.notes : <span className="italic opacity-50">Sin observaciones especiales.</span>}
+                           </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
