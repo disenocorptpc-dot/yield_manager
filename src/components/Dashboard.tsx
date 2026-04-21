@@ -19,72 +19,6 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
   const [editProjectData, setEditProjectData] = useState<Project | undefined>(undefined);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  const loadDemoData = () => {
-    const demoProjects: Project[] = [
-      {
-        id: uid(),
-        name: 'Unicornio Gigante',
-        color: 'from-purple-500 to-fuchsia-500', 
-        imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=300&auto=format&fit=crop', 
-        isMain: false,
-        projectType: 'Principal',
-        status: 'En tiempo',
-        phases: [
-          { id: uid(), name: 'Unicornio', process: 'Impresión', startDate: '2026-04-17', endDate: '2026-04-18', status: 'Terminada' }
-        ],
-        prerequisites: [
-          { id: uid(), name: 'Archivo 3D Final', type: 'Archivo 3D', dueDate: '2026-04-16', owner: 'Modelado', isFulfilled: true }
-        ]
-      },
-      {
-        id: uid(),
-        name: 'Copa Mundial',
-        color: 'from-yellow-400 to-amber-600',
-        imageUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=300&auto=format&fit=crop',
-        isMain: true,
-        projectType: 'Principal',
-        status: 'En tiempo',
-        phases: [
-          { id: uid(), name: 'Copa', process: 'Impresión 3D', startDate: '2026-04-20', endDate: '2026-04-30', status: 'En proceso' },
-          { id: uid(), name: 'Copa', process: 'Ensamble/Acabados', startDate: '2026-04-29', endDate: '2026-05-23', status: 'Pendiente' }
-        ],
-        prerequisites: [
-          { id: uid(), name: 'Filamento Dorado PETG', type: 'Material', dueDate: '2026-04-18', owner: 'Compras', isFulfilled: false },
-          { id: uid(), name: 'Base Madera', type: 'Material', dueDate: '2026-04-28', owner: 'Carpintería', isFulfilled: false }
-        ]
-      },
-      {
-        id: uid(),
-        name: 'DJ Combi',
-        color: 'from-orange-400 to-red-500',
-        imageUrl: 'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?q=80&w=300&auto=format&fit=crop',
-        isMain: false,
-        projectType: 'Comodín',
-        status: 'En pausa',
-        phases: [
-          { id: uid(), name: 'Combi', process: 'Acercamientos', startDate: '2026-04-21', endDate: '2026-05-24', status: 'Pendiente' }
-        ],
-        prerequisites: []
-      },
-      {
-        id: uid(),
-        name: 'Catrín Monumental',
-        color: 'from-indigo-500 to-purple-800',
-        imageUrl: 'https://images.unsplash.com/photo-1605364850125-9c29cc365f57?q=80&w=300&auto=format&fit=crop',
-        isMain: false,
-        projectType: 'Principal',
-        status: 'Desfasado',
-        phases: [
-          { id: uid(), name: 'Catrín', process: 'Impresión 3D', startDate: '2026-04-28', endDate: '2026-05-20', status: 'Pendiente' }
-        ],
-        prerequisites: [
-          { id: uid(), name: 'Aprobación del Cliente', type: 'Otro', dueDate: '2026-04-25', owner: 'Supervisión', isFulfilled: false }
-        ]
-      }
-    ];
-    setProjects(demoProjects);
-  };
-
   // Dynamic Calculations
   const calculateProgress = (p: Project) => {
     const total = p.phases.length + (p.prerequisites?.length || 0);
@@ -161,9 +95,6 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
                 <ImageIcon className="w-6 h-6 text-slate-500" />
               </div>
               <p className="text-sm text-slate-400">El tablero está vacío.</p>
-              <button onClick={loadDemoData} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-all border border-white/10">
-                Cargar Demo
-              </button>
             </div>
           ) : (
             otherProjects.map(proj => (
@@ -317,6 +248,15 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
           onClose={() => setSelectedProjectId(null)} 
           onUpdateProject={(updatedProject) => {
             setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+          }}
+          onDeleteProject={(projectId) => {
+            const isMain = projects.find(p => p.id === projectId)?.isMain;
+            const updatedProjects = projects.filter(p => p.id !== projectId);
+            if (isMain && updatedProjects.length > 0) {
+              updatedProjects[0].isMain = true;
+            }
+            setProjects(updatedProjects);
+            setSelectedProjectId(null);
           }}
           onEdit={() => {
             setEditProjectData(projects.find(p => p.id === selectedProjectId)!);

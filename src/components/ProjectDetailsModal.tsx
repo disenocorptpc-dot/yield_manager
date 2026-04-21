@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Project } from '../App';
-import { X, Calendar, Edit, Paperclip, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Calendar, Edit, Paperclip, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -8,10 +8,11 @@ interface ProjectDetailsModalProps {
   project: Project;
   onClose: () => void;
   onUpdateProject: (p: Project) => void;
+  onDeleteProject: (id: string) => void;
   onEdit: () => void;
 }
 
-export default function ProjectDetailsModal({ project, onClose, onUpdateProject, onEdit }: ProjectDetailsModalProps) {
+export default function ProjectDetailsModal({ project, onClose, onUpdateProject, onDeleteProject, onEdit }: ProjectDetailsModalProps) {
   const calculateProgress = () => {
     const total = project.phases.length + (project.prerequisites?.length || 0);
     if (total === 0) return 0;
@@ -171,10 +172,23 @@ export default function ProjectDetailsModal({ project, onClose, onUpdateProject,
              </div>
 
             {/* Accesos Rápidos */}
-            <button onClick={onEdit} className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-500/30 hover:border-orange-500 hover:text-white text-orange-400 transition-all font-bold group">
-              <Edit className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              Modificar Tiempos o Suministros
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto permanentemente?')) {
+                    onDeleteProject(project.id);
+                  }
+                }} 
+                className="w-14 shrink-0 flex items-center justify-center p-4 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500 text-red-500 transition-all group"
+                title="Eliminar proyecto"
+              >
+                <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
+              <button onClick={onEdit} className="flex-1 flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-500/30 hover:border-orange-500 hover:text-white text-orange-400 transition-all font-bold group">
+                <Edit className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                Modificar Tiempos o Suministros
+              </button>
+            </div>
           </div>
         </div>
       </div>
