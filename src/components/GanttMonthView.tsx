@@ -131,7 +131,7 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
                       <div 
                         key={`${event.id}-${weekIdx}`} 
                         onClick={() => onProjectClick(event.projectId)}
-                        className={`pointer-events-auto text-xs font-semibold truncate shadow-lg event-bar cursor-pointer border border-white/5 backdrop-blur-md flex items-center gap-2 ${event.isMain ? 'ring-1 ring-white/50 shadow-white/10' : 'hover:border-white/20'} text-slate-200`}
+                        className={`pointer-events-auto p-[1px] bg-gradient-to-r ${event.projectColor} cursor-pointer shadow-lg hover:scale-[1.01] transition-transform z-10 hover:z-20 ${event.isMain ? 'ring-2 ring-white shadow-white/20' : ''}`}
                         style={{ 
                           width: `calc(${width}% - 12px)`, 
                           left: `calc(${left}% + 6px)`, 
@@ -140,36 +140,27 @@ export default function GanttMonthView({ projects, onProjectClick }: GanttProps)
                           borderBottomLeftRadius: isContinuousLeft ? '0' : '8px',
                           borderTopRightRadius: isContinuousRight ? '0' : '8px',
                           borderBottomRightRadius: isContinuousRight ? '0' : '8px',
-                          backgroundColor: 'rgba(15, 23, 42, 0.7)' // Fondo slate-900 translúcido
                         }}
                         title={`${event.projectName}: ${event.process}`}
                       >
-                        {/* Tinte de color sutil de fondo */}
-                        <div className={`absolute inset-0 bg-gradient-to-r ${event.projectColor} opacity-20 pointer-events-none`}></div>
-                        
-                        {/* Marca de agua fotográfica texturizada */}
-                        {event.projectImageUrl && (
-                          <div 
-                            className="absolute inset-0 opacity-[0.08] mix-blend-screen pointer-events-none" 
-                            style={{ 
-                              backgroundImage: `url(${event.projectImageUrl})`, 
-                              backgroundSize: '30px 30px', 
-                              backgroundRepeat: 'repeat',
-                              backgroundPosition: 'center'
-                            }}
-                          />
-                        )}
-
-                        {/* Borde brillante izquierdo para denotar color rápidamente */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${event.projectColor} ${isContinuousLeft ? 'opacity-30' : 'opacity-100'}`}></div>
-
-                        <div className="relative z-10 flex items-center gap-2 w-full px-2.5 py-1.5 truncate">
-                          {event.projectImageUrl && (
-                             <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 border border-white/20 shadow-sm bg-black/40">
-                               <img src={event.projectImageUrl} className="w-full h-full object-cover" alt="" />
-                             </div>
-                          )}
-                          <span className="truncate drop-shadow-md text-white">{event.projectName} <span className="text-white/60 font-normal ml-1">— {event.process}</span></span>
+                        <div 
+                          className="w-full h-full bg-slate-950 flex items-center gap-2 overflow-hidden relative"
+                          style={{
+                             borderTopLeftRadius: isContinuousLeft ? '0' : '7px',
+                             borderBottomLeftRadius: isContinuousLeft ? '0' : '7px',
+                             borderTopRightRadius: isContinuousRight ? '0' : '7px',
+                             borderBottomRightRadius: isContinuousRight ? '0' : '7px',
+                          }}
+                        >
+                           <div className={`absolute inset-0 bg-gradient-to-r ${event.projectColor} opacity-[0.15] pointer-events-none`}></div>
+                           <div className="relative z-10 flex items-center gap-2 w-full px-2.5 py-1.5 truncate">
+                             {event.projectImageUrl && (
+                                <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 shadow-sm bg-black/40">
+                                  <img src={event.projectImageUrl} className="w-full h-full object-cover" alt="" />
+                                </div>
+                             )}
+                             <span className="truncate drop-shadow-md text-slate-100 font-bold text-xs tracking-wide">{event.projectName} <span className="text-white/60 font-medium ml-1">— {event.process}</span></span>
+                           </div>
                         </div>
                       </div>
                     );

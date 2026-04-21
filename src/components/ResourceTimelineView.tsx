@@ -95,38 +95,28 @@ export default function ResourceTimelineView({ projects, onProjectClick }: Resou
                     <div
                       key={`${rp.project.id}-${rp.phase.id}-${idx}`}
                       onClick={() => onProjectClick(rp.project.id)}
-                      className={`absolute h-10 rounded-lg shadow-lg cursor-pointer flex items-center gap-2 overflow-hidden border border-white/10 backdrop-blur-md hover:scale-[1.02] transition-all z-10 hover:z-20 ${rp.phase.status === 'Terminada' ? 'opacity-50 grayscale' : ''}`}
+                      className={`absolute h-10 rounded-lg shadow-lg cursor-pointer hover:scale-[1.02] transition-all z-10 hover:z-20 ${rp.phase.status === 'Terminada' ? 'opacity-50 grayscale' : ''} p-[1px] bg-gradient-to-r ${rp.project.color}`}
                       style={{ 
                         left: `${leftOffset}rem`, 
                         width: `calc(${width}rem - 8px)`,
                         marginLeft: '4px',
                         top: `${topOffset}px`,
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)'
                       }}
                       title={`${rp.project.name} - ${rp.phase.status}`}
                     >
-                      {/* Tinte de cristal */}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${rp.project.color} opacity-20`}></div>
-                      
-                      {/* Marca de agua fotográfica */}
-                      {rp.project.imageUrl && (
-                        <div 
-                          className="absolute inset-0 opacity-[0.08] mix-blend-screen pointer-events-none" 
-                          style={{ backgroundImage: `url(${rp.project.imageUrl})`, backgroundSize: '30px 30px', backgroundPosition: 'center', backgroundRepeat: 'repeat' }}
-                        />
-                      )}
-                      
-                      {/* Borde brillante */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${rp.project.color}`}></div>
-                      
-                      {/* Contenido */}
-                      <div className="relative z-10 flex items-center px-2 w-full">
-                        {rp.project.imageUrl && (
-                          <div className="w-6 h-6 rounded-md overflow-hidden shrink-0 border border-white/20 shadow-sm bg-black/40 mr-2">
-                            <img src={rp.project.imageUrl} className="w-full h-full object-cover" alt="" />
-                          </div>
-                        )}
-                        <span className="text-xs font-semibold text-white truncate drop-shadow-md">{rp.project.name}</span>
+                      <div className="w-full h-full bg-slate-950 rounded-[7px] flex items-center gap-2 overflow-hidden relative">
+                        {/* Tinte de cristal */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${rp.project.color} opacity-[0.15] pointer-events-none`}></div>
+                        
+                        {/* Contenido */}
+                        <div className="relative z-10 flex items-center px-2 w-full">
+                          {rp.project.imageUrl && (
+                            <div className="w-6 h-6 rounded-md overflow-hidden shrink-0 shadow-sm bg-black/40 mr-2">
+                              <img src={rp.project.imageUrl} className="w-full h-full object-cover" alt="" />
+                            </div>
+                          )}
+                          <span className="text-xs font-bold text-slate-100 truncate drop-shadow-md tracking-wide">{rp.project.name}</span>
+                        </div>
                       </div>
                     </div>
                   );
