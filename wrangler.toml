@@ -1,0 +1,8 @@
+name = "3d-yield-manager"
+compatibility_date = "2024-04-20"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yield-db"
+database_id = "local-development-only"
