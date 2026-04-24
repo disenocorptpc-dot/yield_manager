@@ -37,6 +37,7 @@ export interface Phase {
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
 
   // Check local storage for existing session on load
   useEffect(() => {
@@ -56,6 +57,9 @@ function App() {
         if (response.ok) {
           const data = await response.json();
           setProjects(data);
+          setIsDataLoaded(true);
+        } else {
+          console.error("Error del servidor D1:", response.status);
         }
       } catch (error) {
         console.error("No se pudo cargar de la DB:", error);
@@ -67,6 +71,11 @@ function App() {
 
   // Hook into setProjects to automatically update the DB
   const handleUpdateProjects = async (newProjects: Project[] | ((prev: Project[]) => Project[])) => {
+    if (!isDataLoaded) {
+      alert("Error Crítico de Seguridad: No se pueden guardar cambios porque la base de datos no se cargó correctamente al inicio. Si guardamos ahora, la base de datos se sobreescribiría y perderías todo. Por favor, recarga la página.");
+      return;
+    }
+
     // Resolve callback if needed
     const resolvedProjects = typeof newProjects === 'function' ? newProjects(projects) : newProjects;
     setProjects(resolvedProjects);
