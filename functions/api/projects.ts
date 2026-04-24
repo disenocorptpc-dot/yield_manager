@@ -40,13 +40,25 @@ export async function onRequestPost(context) {
       )
     `).run();
     
-    await context.env.DB.prepare("DELETE FROM projects").run();
+    const deleteStmt = context.env.DB.prepare("DELETE FROM projects");
+    const insertStmt = context.env.DB.prepare("INSERT OR REPLACE INTO projects (id, data) VALUES (?, ?)");
     
+    const stmts = [deleteStmt];
+    
+    // Deduplicar proyectos por si el frontend envió accidentalmente dos con el mismo ID
+    const uniqueProjects = new Map();
     for (const proj of projects) {
-      await context.env.DB.prepare(
-        "INSERT INTO projects (id, data) VALUES (?, ?)"
-      ).bind(proj.id, JSON.stringify(proj)).run();
+      if (proj && proj.id) {
+        uniqueProjects.set(proj.id, proj);
+      }
     }
+    
+    for (const proj of uniqueProjects.values()) {
+      stmts.push(insertStmt.bind(proj.id, JSON.stringify(proj)));
+    }
+    
+    // Ejecutar todo como una transacción atómica
+    await context.env.DB.batch(stmts);
     
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" }
