@@ -5,7 +5,7 @@ import ProjectModal from './ProjectModal';
 import ProjectDetailsModal from './ProjectDetailsModal';
 import {
   Plus, LayoutList, Layers, Star, AlertTriangle,
-  CheckCircle2, Clock4, TrendingDown, Package
+  CheckCircle2, Clock4, TrendingDown, Package, Trash2
 } from 'lucide-react';
 import type { Project } from '../App';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
@@ -160,8 +160,21 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
                         </div>
                       </div>
 
-                      {/* Status dot */}
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[proj.status]}`} />
+                      {/* Quick delete (visible on hover) */}
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (window.confirm(`¿Eliminar "${proj.name}" permanentemente?`)) {
+                            const updated = projects.filter(p => p.id !== proj.id);
+                            if (proj.isMain && updated.length > 0) updated[0].isMain = true;
+                            setProjects(updated);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-red-500/0 hover:bg-red-500/20 text-slate-600 hover:text-red-400 shrink-0"
+                        title="Eliminar proyecto"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 );
