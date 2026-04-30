@@ -1,67 +1,103 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @theme {
-  --color-background: #020617; /* slate-950 */
-  --color-surface: #0f172a; /* slate-900 */
-  --color-surface-light: #1e293b; /* slate-800 */
-  --color-primary: #f97316; /* orange-500 */
-  --color-primary-hover: #ea580c; /* orange-600 */
+  --color-background:     #020617; /* slate-950 */
+  --color-surface:        #0f172a; /* slate-900 */
+  --color-surface-light:  #1e293b; /* slate-800 */
+  --color-primary:        #f97316; /* orange-500 */
+  --color-primary-hover:  #ea580c; /* orange-600 */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+/* ── Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--color-background);
-  color: #f8fafc; /* text-slate-50 */
-  overflow: hidden; /* Prevent body scroll, handle inside components */
+  color: #f8fafc;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism utilities */
+/* ── Glassmorphism ────────────────────────────────────────────────────── */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .glass-header {
-  background: rgba(2, 6, 23, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Custom styles for gantt bars */
-.event-bar {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+/* ── KPI Card tokens ──────────────────────────────────────────────────── */
+.kpi-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.2s;
 }
-.event-bar:hover {
-  filter: brightness(1.2) contrast(1.1);
-  transform: scaleY(1.1) translateY(-1px);
-  z-index: 20;
+.kpi-card:hover { border-color: rgba(255, 255, 255, 0.12); }
+
+.kpi-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b; /* slate-500 */
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2); 
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); 
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); 
+.kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  color: #f1f5f9; /* slate-100 */
+  letter-spacing: -0.03em;
 }
 
-/* ====== PRINT MODE FOR PHYSICAL PAPER ====== */
+/* ── Custom Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: rgba(0,0,0,0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.08); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Gantt bar hover ──────────────────────────────────────────────────── */
+.gantt-bar {
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.gantt-bar:hover {
+  filter: brightness(1.15) contrast(1.05);
+  transform: scaleY(1.06);
+}
+
+/* ── Ambient noise texture overlay (subtle) ───────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  z-index: 9999;
+}
+
+/* ── Print Mode ───────────────────────────────────────────────────────── */
 @media print {
-  @page {
-    size: landscape;
-    margin: 1cm;
-  }
+  @page { size: landscape; margin: 1cm; }
 
   body {
     background-color: white !important;
@@ -69,43 +105,26 @@ body {
     overflow: visible !important;
   }
 
-  #root {
-    height: auto !important;
-    overflow: visible !important;
-  }
+  #root { height: auto !important; overflow: visible !important; }
 
-  /* Force printers to capture background gradients/colors for Gantt bars */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Remove Dark Mode Aesthetics & Glass */
-  .glass-panel, .glass-header, .bg-slate-900, .bg-slate-950, .bg-slate-800, 
-  .bg-black\/20, .bg-black\/30, .bg-black\/40, .bg-slate-900\/50, .bg-slate-900\/80, .bg-slate-950\/30, .bg-slate-950\/40, .bg-slate-950\/50, .bg-slate-900\/60 {
+  .glass-panel, .glass-header, .kpi-card {
     background-color: transparent !important;
-    background-image: none !important;
     backdrop-filter: none !important;
     box-shadow: none !important;
-    border-color: #cbd5e1 !important; /* slate-300 */
-  }
-
-  /* Text color normalization (white to dark grey/black) */
-  .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
-    color: #0f172a !important; 
-  }
-  
-  .text-slate-500 {
-    color: #475569 !important;
-  }
-
-  /* Borders normalization */
-  .border-white\/5, .border-white\/10 {
     border-color: #cbd5e1 !important;
   }
 
-  /* Explode all scroll containers so they print full length, excluding images */
-  .overflow-y-auto:not(img), .h-full:not(img), .max-h-\[90vh\]:not(img) {
+  .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+    color: #0f172a !important;
+  }
+  .text-slate-500, .text-slate-600 { color: #475569 !important; }
+
+  .overflow-y-auto, .overflow-x-auto, .overflow-hidden {
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;

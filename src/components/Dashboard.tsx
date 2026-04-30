@@ -1,217 +1,287 @@
 import React, { useState } from 'react';
-import GanttMonthView from './GanttMonthView';
+import HorizontalGanttView from './HorizontalGanttView';
 import ResourceTimelineView from './ResourceTimelineView';
 import ProjectModal from './ProjectModal';
 import ProjectDetailsModal from './ProjectDetailsModal';
-import { PackagePlus, Star, ImageIcon, Plus, Box, AlertCircle, CheckCircle } from 'lucide-react';
-import type { Project, Phase } from '../App';
+import {
+  Plus, LayoutList, Layers, Star, AlertTriangle,
+  CheckCircle2, Clock4, TrendingDown, Package
+} from 'lucide-react';
+import type { Project } from '../App';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
 
 interface DashboardProps {
   projects: Project[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
-// Helper to generate IDs
-const uid = () => Math.random().toString(36).substr(2, 9);
+const calculateProgress = (p: Project) => {
+  const total = p.phases.length + (p.prerequisites?.length || 0);
+  if (total === 0) return 0;
+  const done =
+    p.phases.filter(ph => ph.status === 'Terminada').length +
+    (p.prerequisites || []).filter(r => r.isFulfilled).length;
+  return Math.round((done / total) * 100);
+};
+
+const STATUS_CHIP = {
+  'En tiempo': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'Desfasado':  'bg-red-500/10 text-red-400 border-red-500/20',
+  'En pausa':   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+};
+const STATUS_DOT = {
+  'En tiempo': 'bg-emerald-400',
+  'Desfasado':  'bg-red-400',
+  'En pausa':   'bg-amber-400',
+};
+
+function urgencyLabel(dueDate: string): { label: string; urgent: boolean } {
+  const diff = differenceInCalendarDays(parseISO(dueDate), new Date());
+  if (diff < 0)  return { label: `Vencido hace ${Math.abs(diff)}d`, urgent: true };
+  if (diff === 0) return { label: 'Vence hoy', urgent: true };
+  if (diff <= 3)  return { label: `En ${diff} día${diff > 1 ? 's' : ''}`, urgent: true };
+  return { label: `En ${diff} días`, urgent: false };
+}
 
 export default function Dashboard({ projects, setProjects }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState('calendar');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab]           = useState<'gantt' | 'recursos'>('gantt');
+  const [isModalOpen, setIsModalOpen]       = useState(false);
   const [editProjectData, setEditProjectData] = useState<Project | undefined>(undefined);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  // Dynamic Calculations
-  const calculateProgress = (p: Project) => {
-    const total = p.phases.length + (p.prerequisites?.length || 0);
-    if (total === 0) return 0;
-    const done = p.phases.filter(ph => ph.status === 'Terminada').length + (p.prerequisites || []).filter(req => req.isFulfilled).length;
-    return Math.round((done / total) * 100);
+  // ── KPIs ─────────────────────────────────────────────────────────────────
+  const totalActive   = projects.filter(p => p.status !== 'En pausa').length;
+  const totalDelay    = projects.filter(p => p.status === 'Desfasado').length;
+  const totalPaused   = projects.filter(p => p.status === 'En pausa').length;
+  const avgProgress   = projects.length
+    ? Math.round(projects.reduce((acc, p) => acc + calculateProgress(p), 0) / projects.length)
+    : 0;
+
+  // ── Logistics ────────────────────────────────────────────────────────────
+  const pendingLogistics = projects
+    .flatMap(p =>
+      (p.prerequisites || [])
+        .filter(r => !r.isFulfilled)
+        .map(r => ({ ...r, projectName: p.name, projectId: p.id, color: p.color }))
+    )
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const openNewProject = () => { setEditProjectData(undefined); setIsModalOpen(true); };
+  const openEditProject = (id: string) => {
+    setEditProjectData(projects.find(p => p.id === id)!);
+    setSelectedProjectId(null);
+    setIsModalOpen(true);
   };
 
-  const mainProject = projects.find(p => p.isMain);
-  const otherProjects = projects.filter(p => !p.isMain);
-
-  // Get all unfulfilled logistics across all projects, sorted by date
-  const pendingLogistics = projects.flatMap(p => 
-    (p.prerequisites || [])
-      .filter(req => !req.isFulfilled)
-      .map(req => ({ ...req, projectName: p.name, projectId: p.id, color: p.color }))
-  ).sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
   return (
-    <div className="flex print:block h-full print:h-auto gap-6 print:space-y-6">
-      {/* Sidebar para Proyectos */}
-      <div className="w-80 print:w-full print:block glass-panel rounded-2xl flex flex-col overflow-hidden print:overflow-visible shadow-2xl flex-shrink-0">
-        
-        {/* Proyecto Principal (Destacado) */}
-        {mainProject ? (
-          <div className="p-5 border-b border-white/10 relative overflow-hidden group">
-            <div className={`absolute inset-0 bg-gradient-to-br ${mainProject.color} opacity-20 pointer-events-none transition-opacity group-hover:opacity-30`}></div>
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-3">
-                <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-500/30 flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-orange-400" /> PROYECTO PRINCIPAL
-                </span>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${mainProject.status === 'En tiempo' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : mainProject.status === 'Desfasado' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                  {mainProject.status}
-                </span>
-              </div>
-              <div className="flex gap-4 items-center">
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-800 border border-white/10 shadow-lg shrink-0 relative">
-                  {mainProject.imageUrl ? (
-                    <img src={mainProject.imageUrl} alt={mainProject.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Box className="w-6 h-6 text-slate-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-                  )}
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white leading-tight">{mainProject.name}</h2>
-                  <p className="text-xs text-slate-400 mt-1">{mainProject.phases.length} Fases programadas</p>
-                  
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5">
-                      <div className={`h-full bg-gradient-to-r ${mainProject.color}`} style={{ width: `${calculateProgress(mainProject)}%` }}></div>
-                    </div>
-                    <span className="text-xs font-bold text-white">{calculateProgress(mainProject)}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-5 border-b border-white/5 bg-white/5 flex items-center justify-center text-slate-500 text-sm italic text-center">
-            No hay proyecto principal.<br/>Marca un proyecto de la lista.
-          </div>
-        )}
+    <div className="flex h-full gap-5">
 
-        {/* Lista de otros proyectos (Ocultar en impresión si se prefiere, o dejar fluir) */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Activos en Taller</h3>
-          </div>
-          
-          {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-slate-500" />
-              </div>
-              <p className="text-sm text-slate-400">El tablero está vacío.</p>
+      {/* ──────────────────────────────────────────────────────
+          LEFT SIDEBAR
+      ────────────────────────────────────────────────────── */}
+      <div className="w-64 shrink-0 flex flex-col gap-4">
+
+        {/* KPI cards */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="kpi-card">
+            <span className="kpi-label">Activos</span>
+            <div className="flex items-end gap-1.5 mt-1">
+              <span className="kpi-value">{totalActive}</span>
+              <Layers className="w-3.5 h-3.5 text-slate-500 mb-0.5" />
             </div>
-          ) : (
-            otherProjects.map(proj => (
-              <div key={proj.id} className="p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer flex gap-3 items-center group">
-                <div className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 relative`}>
-                  {proj.imageUrl ? (
-                    <img src={proj.imageUrl} alt={proj.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${proj.color} opacity-80`}></div>
-                  )}
-                  {/* Indicator of project color even over image */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r ${proj.color}`}></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-slate-200 text-sm truncate group-hover:text-white transition-colors">{proj.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] uppercase font-bold text-slate-500">{proj.projectType}</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${proj.status === 'En tiempo' ? 'bg-emerald-400' : proj.status === 'Desfasado' ? 'bg-red-400' : 'bg-amber-400'}`}></span>
-                    <span className="text-[10px] text-slate-500">{calculateProgress(proj)}%</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newProjects = projects.map(p => ({ ...p, isMain: p.id === proj.id }));
-                    setProjects(newProjects);
-                  }}
-                  className="print:hidden w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-slate-500 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
-                  title="Marcar como principal"
-                >
-                  <Star className="w-3 h-3" />
-                </button>
-              </div>
-            ))
-          )}
+          </div>
+          <div className={`kpi-card ${totalDelay > 0 ? 'border-red-500/20 bg-red-950/20' : ''}`}>
+            <span className="kpi-label">Desfasados</span>
+            <div className="flex items-end gap-1.5 mt-1">
+              <span className={`kpi-value ${totalDelay > 0 ? 'text-red-400' : ''}`}>{totalDelay}</span>
+              <TrendingDown className={`w-3.5 h-3.5 mb-0.5 ${totalDelay > 0 ? 'text-red-400' : 'text-slate-500'}`} />
+            </div>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Avance prom.</span>
+            <div className="flex items-end gap-1.5 mt-1">
+              <span className="kpi-value">{avgProgress}%</span>
+            </div>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">En pausa</span>
+            <div className="flex items-end gap-1.5 mt-1">
+              <span className="kpi-value">{totalPaused}</span>
+              <Clock4 className="w-3.5 h-3.5 text-slate-500 mb-0.5" />
+            </div>
+          </div>
         </div>
-        
-        {/* Acciones base */}
-        <div className="print:hidden p-4 border-t border-white/5 bg-black/20">
-          <button onClick={() => { setEditProjectData(undefined); setIsModalOpen(true); }} className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-            <Plus className="w-4 h-4" /> Nuevo Proyecto
-          </button>
+
+        {/* Project list */}
+        <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden shadow-xl">
+          <div className="px-4 pt-4 pb-2 border-b border-white/5">
+            <h3 className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Proyectos en Taller</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar py-2 px-2 space-y-1">
+            {projects.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
+                  <Package className="w-5 h-5 text-slate-600" />
+                </div>
+                <p className="text-xs text-slate-500">El tablero está vacío.</p>
+              </div>
+            ) : (
+              projects.map(proj => {
+                const prog = calculateProgress(proj);
+                const isMain = proj.isMain;
+                return (
+                  <div
+                    key={proj.id}
+                    onClick={() => setSelectedProjectId(proj.id)}
+                    className={`p-2.5 rounded-xl cursor-pointer transition-all group relative overflow-hidden
+                      ${isMain ? 'bg-orange-500/5 border border-orange-500/10' : 'hover:bg-white/5 border border-transparent hover:border-white/5'}`}
+                  >
+                    {/* Left accent bar */}
+                    <div className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b ${proj.color}`} />
+
+                    <div className="pl-3 flex items-center gap-2.5">
+                      {/* Thumbnail */}
+                      <div className={`w-9 h-9 rounded-lg shrink-0 overflow-hidden bg-gradient-to-br ${proj.color} border border-white/10`}>
+                        {proj.imageUrl && <img src={proj.imageUrl} alt={proj.name} className="w-full h-full object-cover" />}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {isMain && <Star className="w-2.5 h-2.5 text-orange-400 fill-orange-400 shrink-0" />}
+                          <p className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors truncate">{proj.name}</p>
+                        </div>
+                        {/* Progress bar */}
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 h-1 bg-black/50 rounded-full overflow-hidden border border-white/5">
+                            <div className={`h-full bg-gradient-to-r ${proj.color} transition-all`} style={{ width: `${prog}%` }} />
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-500 w-6 text-right">{prog}%</span>
+                        </div>
+                      </div>
+
+                      {/* Status dot */}
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[proj.status]}`} />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="p-3 border-t border-white/5">
+            <button
+              onClick={openNewProject}
+              className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_25px_rgba(249,115,22,0.35)]"
+            >
+              <Plus className="w-4 h-4" /> Nuevo Proyecto
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Content Area (Calendario) */}
-      <div className="flex-1 print:block glass-panel rounded-2xl flex flex-col overflow-hidden print:overflow-visible shadow-2xl print:break-before-page print:break-inside-avoid">
-        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/20">
-          <div className="print:hidden flex bg-slate-900/50 border border-white/5 p-1 rounded-lg backdrop-blur-md">
-            <button 
-              onClick={() => setActiveTab('calendar')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'calendar' ? 'bg-white/10 shadow-sm text-white' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Calendario General
-            </button>
-            <button 
+      {/* ──────────────────────────────────────────────────────
+          CENTER: TIMELINE
+      ────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col gap-3 min-w-0">
+
+        {/* Tab selector */}
+        <div className="flex items-center gap-3">
+          <div className="flex bg-slate-900/60 border border-white/5 p-1 rounded-xl backdrop-blur-md">
+            <button
               onClick={() => setActiveTab('gantt')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'gantt' ? 'bg-white/10 shadow-sm text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'gantt'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              Línea de Tiempo
+              <LayoutList className="w-4 h-4" /> Línea de Tiempo
+            </button>
+            <button
+              onClick={() => setActiveTab('recursos')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'recursos'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-4 h-4" /> Por Proceso
             </button>
           </div>
-          {/* Leyenda de proyectos activos (colores) */}
-          <div className="flex items-center gap-3">
-            {projects.slice(0, 4).map(p => (
-              <div key={p.id} className="flex items-center gap-1.5 text-xs text-slate-400">
-                <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${p.color}`}></span>
-                <span className="truncate max-w-[80px]">{p.name}</span>
+
+          {/* Project color legend */}
+          <div className="flex items-center gap-3 ml-auto flex-wrap">
+            {projects.slice(0, 5).map(p => (
+              <div key={p.id} className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${p.color} shrink-0`} />
+                <span className="truncate max-w-[72px]">{p.name}</span>
               </div>
             ))}
-            {projects.length > 4 && <span className="text-xs text-slate-500">+{projects.length - 4} más</span>}
+            {projects.length > 5 && (
+              <span className="text-xs text-slate-600">+{projects.length - 5}</span>
+            )}
           </div>
         </div>
-        
-        <div className="flex-1 overflow-hidden p-2 relative bg-slate-950/30">
-          {activeTab === 'calendar' ? (
-            <GanttMonthView projects={projects} onProjectClick={setSelectedProjectId} />
+
+        {/* View */}
+        <div className="flex-1 min-h-0">
+          {activeTab === 'gantt' ? (
+            <HorizontalGanttView projects={projects} onProjectClick={setSelectedProjectId} />
           ) : (
             <ResourceTimelineView projects={projects} onProjectClick={setSelectedProjectId} />
           )}
         </div>
       </div>
 
-      {/* RIGHT SIDEBAR: LOGISTICS & ALERTS */}
-      <div className="w-80 print:w-full print:block bg-slate-900 border-l border-white/5 flex flex-col z-10 shrink-0 print:border-none print:mt-8">
-        <div className="p-5 border-b border-white/5 bg-slate-950/50">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
-            <AlertCircle className="w-4 h-4 text-orange-400" /> Logística Crítica
-          </h2>
-          <p className="text-[10px] text-slate-500 mt-1">Suministros y requisitos pendientes</p>
+      {/* ──────────────────────────────────────────────────────
+          RIGHT: LOGISTICS
+      ────────────────────────────────────────────────────── */}
+      <div className="w-60 shrink-0 flex flex-col glass-panel rounded-2xl overflow-hidden shadow-xl">
+        <div className="px-4 pt-4 pb-3 border-b border-white/5">
+          <div className="flex items-center gap-2 mb-0.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+            <h2 className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Logística Crítica</h2>
+          </div>
+          <p className="text-[10px] text-slate-600">Suministros y requisitos pendientes</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar print:grid print:grid-cols-2 print:gap-4 print:space-y-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
           {pendingLogistics.length === 0 ? (
-            <div className="text-center p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
-              <CheckCircle className="w-8 h-8 text-emerald-500/50 mx-auto mb-2" />
-              <p className="text-xs text-slate-400">Todo el material y logística está cubierto.</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500/30" />
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Todo el material y logística cubiertos.
+              </p>
             </div>
           ) : (
             pendingLogistics.map(req => {
-              const overdue = new Date(req.dueDate) < new Date('2026-04-18');
+              const { label, urgent } = urgencyLabel(req.dueDate);
               return (
-                <div key={req.id} onClick={() => setSelectedProjectId(req.projectId)} className="p-3 bg-black/30 border border-white/5 rounded-xl hover:bg-black/50 cursor-pointer transition-colors relative overflow-hidden group">
-                  <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${req.color}`}></div>
+                <div
+                  key={req.id}
+                  onClick={() => setSelectedProjectId(req.projectId)}
+                  className="p-3 bg-black/30 border border-white/[0.06] rounded-xl hover:bg-black/50 cursor-pointer transition-colors relative overflow-hidden group"
+                >
+                  {/* Left accent */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${req.color}`} />
                   <div className="pl-2">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-[9px] uppercase font-bold text-slate-500 flex items-center gap-1">
-                        <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${req.color}`}></span>
+                    <div className="flex items-start justify-between gap-1 mb-1.5">
+                      <span className="text-[9px] uppercase font-bold text-slate-500 flex items-center gap-1 truncate">
+                        <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${req.color} shrink-0`} />
                         {req.projectName}
                       </span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${overdue ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
-                         {req.dueDate}
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                        urgent
+                          ? 'bg-red-500/15 text-red-400 border border-red-500/20'
+                          : 'bg-slate-800 text-slate-500 border border-white/5'
+                      }`}>
+                        {label}
                       </span>
                     </div>
-                    <h4 className="text-xs font-bold text-slate-200 mt-1 leading-tight">{req.name}</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Resp: <span className="text-slate-300">{req.owner}</span></p>
+                    <h4 className="text-xs font-bold text-slate-200 leading-tight mb-1">{req.name}</h4>
+                    <p className="text-[9px] text-slate-500">
+                      {req.type} · <span className="text-slate-400">{req.owner}</span>
+                    </p>
                   </div>
                 </div>
               );
@@ -220,48 +290,38 @@ export default function Dashboard({ projects, setProjects }: DashboardProps) {
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* ── Modals ── */}
       {isModalOpen && (
-        <ProjectModal 
+        <ProjectModal
           existingProjects={projects}
           initialData={editProjectData}
-          onClose={() => { setIsModalOpen(false); setEditProjectData(undefined); }} 
-          onSave={(projectToSave) => {
+          onClose={() => { setIsModalOpen(false); setEditProjectData(undefined); }}
+          onSave={projectToSave => {
             if (editProjectData) {
-              // Update existing
               setProjects(projects.map(p => p.id === projectToSave.id ? projectToSave : p));
             } else {
-              // Create new, make main if first
               if (projects.length === 0) projectToSave.isMain = true;
               setProjects([...projects, projectToSave]);
             }
             setIsModalOpen(false);
             setEditProjectData(undefined);
-          }} 
+          }}
         />
       )}
-      
+
       {selectedProjectId && !isModalOpen && (
-        <ProjectDetailsModal 
-          project={projects.find(p => p.id === selectedProjectId)!} 
-          onClose={() => setSelectedProjectId(null)} 
-          onUpdateProject={(updatedProject) => {
-            setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
-          }}
-          onDeleteProject={(projectId) => {
-            const isMain = projects.find(p => p.id === projectId)?.isMain;
-            const updatedProjects = projects.filter(p => p.id !== projectId);
-            if (isMain && updatedProjects.length > 0) {
-              updatedProjects[0].isMain = true;
-            }
-            setProjects(updatedProjects);
+        <ProjectDetailsModal
+          project={projects.find(p => p.id === selectedProjectId)!}
+          onClose={() => setSelectedProjectId(null)}
+          onUpdateProject={updated => setProjects(projects.map(p => p.id === updated.id ? updated : p))}
+          onDeleteProject={id => {
+            const isMain = projects.find(p => p.id === id)?.isMain;
+            const updated = projects.filter(p => p.id !== id);
+            if (isMain && updated.length > 0) updated[0].isMain = true;
+            setProjects(updated);
             setSelectedProjectId(null);
           }}
-          onEdit={() => {
-            setEditProjectData(projects.find(p => p.id === selectedProjectId)!);
-            setSelectedProjectId(null);
-            setIsModalOpen(true);
-          }}
+          onEdit={() => openEditProject(selectedProjectId)}
         />
       )}
     </div>
